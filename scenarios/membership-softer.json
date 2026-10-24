@@ -86,6 +86,17 @@
     ]
   },
 
+  "live": {
+    "persona": "Dana Whitfield, VP of Membership at Northfield Warehouse Club. Busy, friendly, informal Slack style (lowercase is fine, the odd emoji). Knows the business and recent decisions but isn't a data person, so speaks in rough numbers. A little impatient with vague questions. Never volunteers information that wasn't asked for.",
+    "reframe_rubric": [
+      { "id": "metric", "label": "Names a measurable metric", "description": "Refers to a specific, measurable quantity (e.g. renewal rate, member count) rather than a feeling like \"softer\"." },
+      { "id": "verify", "label": "Checks whether it's real", "description": "Leaves room for the change being smaller than it looks or a measurement artifact, e.g. \"whether\", \"confirm\", \"validate\", \"actually\"." },
+      { "id": "open_cause", "label": "Doesn't presume a cause", "description": "Asks what is driving the change instead of asserting one (unhappy members, the competitor, the economy, the outage)." },
+      { "id": "decision", "label": "Tied to a decision", "description": "Connects the work to an action, a decision, or what leadership should do with the answer." },
+      { "id": "scoped", "label": "Scoped to the deadline", "description": "Bounded to what can be answered for Thursday's meeting or this quarter, not an open-ended program or a big build." }
+    ]
+  },
+
   "questions": [
     {
       "id": "q_metric",
