@@ -21,6 +21,9 @@ export const WEIGHTS = {
   checks: 15,
 };
 
+// Reframe category: the multiple-choice pick and the written sentence.
+export const REFRAME_SPLIT = { pick: 0.6, written: 0.4 };
+
 // Noise penalties. Decision: a non-driver filed as a driver is always
 // penalised, but the penalty doubles once you've asked the question that
 // debunks it — at that point you had the evidence and ignored it.
@@ -85,8 +88,15 @@ export function placementStatus(comp, spineId, placed) {
 
 function scoreReframe(scenario, run) {
   const opt = scenario.reframe_options.find((o) => o.id === run.reframeChoice);
+  const pick = opt?.is_best ? 100 : 0;
+  // The written score is graded once, when the player confirms Round 1, and
+  // saved on the run, so re-scoring never depends on whether a model loads.
+  const written = run.reframeGrade?.score ?? 0;
   return {
-    score: opt?.is_best ? 100 : 0,
+    score: Math.round(REFRAME_SPLIT.pick * pick + REFRAME_SPLIT.written * written),
+    pick,
+    written,
+    grade: run.reframeGrade ?? null,
     choice: opt ?? null,
     best: scenario.reframe_options.find((o) => o.is_best),
   };

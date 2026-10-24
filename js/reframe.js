@@ -1,7 +1,6 @@
-// Keyword-based feedback on the player's free-text reframe.
-// This is the v1 / fallback grader; v1.5 swaps in sentence embeddings
-// compared against scenario.reference_frames and scenario.flaw_patterns.
-// It gives feedback only and never affects the score.
+// Keyword-based feedback on the player's free-text reframe. The hits are
+// always shown as feedback; keywordGrade() is the fallback written score when
+// the embedding grader (js/semantic.js) can't load.
 
 export const SOFT_CHAR_LIMIT = 160;
 
@@ -57,4 +56,16 @@ export function gradeReframe(text) {
     hits.push({ tag: 'long', good: false, note: `Over ${SOFT_CHAR_LIMIT} characters — a sharp problem statement usually fits in one breath.` });
   }
   return { empty: false, hits };
+}
+
+/**
+ * Fallback written score (0–100) used when the embedding model is unavailable:
+ * start at 40, +20 per good signal, −25 per flaw, −10 if over the soft limit.
+ */
+export function keywordGrade(text) {
+  const g = gradeReframe(text);
+  if (g.empty) return { method: 'none', score: 0 };
+  let score = 40;
+  for (const x of g.hits) score += x.good ? 20 : x.tag === 'long' ? -10 : -25;
+  return { method: 'keyword', score: Math.max(0, Math.min(100, score)) };
 }

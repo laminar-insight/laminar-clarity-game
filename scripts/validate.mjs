@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { SPECIAL_BUCKETS, COMPONENT_TYPES, QUESTION_VALUES, FLAW_TAGS } from '../js/scoring.js';
+import { DEFAULT_THRESHOLDS } from '../js/semantic.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const toList = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
@@ -46,8 +47,19 @@ export function validateScenario(s) {
     if (!o.is_best && !toList(o.flaw_tags).length) err(`wrong reframe option "${o.id}" has no flaw_tags`);
     if (o.is_best && toList(o.flaw_tags).length) err(`best reframe option "${o.id}" should not carry flaw_tags`);
   }
-  if (!toList(s.reference_frames).length) warn('no reference_frames (needed for embedding grading)');
-  for (const t of Object.keys(s.flaw_patterns ?? {})) if (!FLAW_TAGS.includes(t)) err(`flaw_patterns has unknown tag "${t}"`);
+  if (!toList(s.reference_frames).length) err('reference_frames must be a non-empty list (used by embedding grading)');
+  for (const [t, list] of Object.entries(s.flaw_patterns ?? {})) {
+    if (!FLAW_TAGS.includes(t)) err(`flaw_patterns has unknown tag "${t}"`);
+    if (!toList(list).length || toList(list).some((x) => typeof x !== 'string' || !x.trim())) err(`flaw_patterns "${t}" must be a list of sentences`);
+  }
+  if (s.grading != null) {
+    for (const [k, v] of Object.entries(s.grading)) {
+      if (!['floor', 'ceiling', 'flawMin', 'flawMargin'].includes(k)) err(`grading has unknown key "${k}"`);
+      else if (typeof v !== 'number' || v < -1 || v > 1) err(`grading.${k} must be a number between -1 and 1`);
+    }
+    const g = { ...DEFAULT_THRESHOLDS, ...s.grading };
+    if (g.floor >= g.ceiling) err('grading.floor must be below grading.ceiling');
+  }
 
   // Questions
   const qIds = dupes(s.questions, 'question');

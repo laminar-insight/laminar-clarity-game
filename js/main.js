@@ -11,7 +11,9 @@ import {
   scoreRun,
   visibleComponents,
 } from './scoring.js';
-import { SOFT_CHAR_LIMIT, gradeReframe } from './reframe.js';
+import { SOFT_CHAR_LIMIT, gradeReframe, keywordGrade } from './reframe.js';
+import { buildCorpus, corpusTexts, gradeSemantic } from './semantic.js';
+import * as embedder from './embedder.js';
 import {
   clearRun,
   computeStats,
@@ -65,6 +67,8 @@ let view = 'home'; // 'home' | 'shared' | 'game'
 let shared = null;
 // Ephemeral UI state — not saved, reset when the round changes.
 let ui = {};
+// ?grader=keyword skips the embedding model (for testing or slow devices).
+const forceKeyword = new URLSearchParams(location.search).get('grader') === 'keyword';
 
 // ---------- tiny DOM helper ----------
 
@@ -382,6 +386,7 @@ function renderReframe() {
     sync();
     body = [
       roundHead(1, 'What problem are you actually solving?', 'Write one sentence — the line you’d put at the top of your doc.'),
+      graderStatus(),
       h('label', { class: 'field' }, h('span', { class: 'sr-only' }, 'Your problem statement'), input),
       h('div', { class: 'field-meta', id: 'reframe-help' }, h('span', null, 'One sentence. Short beats complete.'), counter),
       actions(lock, secondary('Skip writing', () => update({ reframeStage: 'choose' }))),
@@ -410,11 +415,23 @@ function renderReframe() {
           ),
         ),
       ),
-      actions(primary('Confirm', () => update({ reframeChoice: choice, reframeStage: 'feedback' }), !choice)),
+      graderStatus(),
+      actions(
+        primary(
+          'Confirm',
+          async (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            if (run.reframeText.trim()) btn.textContent = 'Grading your sentence…';
+            const reframeGrade = await gradeWritten(run.reframeText);
+            update({ reframeChoice: choice, reframeStage: 'feedback', reframeGrade });
+          },
+          !choice,
+        ),
+      ),
     ];
   } else {
     const chosen = scenario.reframe_options.find((o) => o.id === run.reframeChoice);
-    const grade = gradeReframe(run.reframeText);
     body = [
       roundHead(1, chosen?.is_best ? 'That’s the one.' : 'Not quite.', chosen?.is_best ? 'Here’s why it beats the others.' : 'Here’s what each framing gets wrong.'),
       h(
@@ -436,7 +453,7 @@ function renderReframe() {
           ),
         ),
       ),
-      reframeFeedback(grade),
+      reframeFeedback(),
       actions(primary('Next · Ask', () => update({ round: 'ask' }))),
     ];
   }
@@ -444,17 +461,79 @@ function renderReframe() {
   return h('main', { class: 'game' }, contextPanel(), h('section', { class: 'play' }, body));
 }
 
-function reframeFeedback(grade) {
-  if (grade.empty) return null;
+/** Written score: embeddings when the model is available, keywords otherwise. */
+async function gradeWritten(text) {
+  if (!text.trim()) return { method: 'none', score: 0 };
+  if (!forceKeyword) {
+    try {
+      const corpus = buildCorpus(scenario);
+      const vectors = await embedder.embed([text, ...corpusTexts(corpus)]);
+      return gradeSemantic(vectors, corpus, scenario.grading);
+    } catch (e) {
+      console.warn('Embedding grading unavailable, falling back to keywords:', e.message);
+    }
+  }
+  return keywordGrade(text);
+}
+
+function graderStatusText() {
+  if (forceKeyword) return ['Keyword grading', 'off'];
+  const { status, progress } = embedder.getState();
+  if (status === 'ready') return ['Smart grading ready', 'ready'];
+  if (status === 'error') return ['Smart grading unavailable — using keyword check', 'off'];
+  return [`Loading smart grading… ${Math.round(progress * 100)}%`, 'loading'];
+}
+
+function graderStatus() {
+  const [text, cls] = graderStatusText();
+  return h('p', { class: `grader-status ${cls}`, role: 'status' }, text);
+}
+
+// Refresh the pill in place so typing in the textarea isn't interrupted.
+embedder.subscribe(() => {
+  const [text, cls] = graderStatusText();
+  for (const el of document.querySelectorAll('.grader-status')) {
+    el.textContent = text;
+    el.className = `grader-status ${cls}`;
+  }
+});
+
+const WRITTEN_METHOD_NOTES = {
+  embedding: 'Graded on your device by a small sentence-embedding model, which compares your sentence with reference framings and common flawed ones.',
+  keyword: 'Smart grading wasn’t available, so this was scored with a keyword check.',
+};
+
+function reframeFeedback() {
+  const kw = gradeReframe(run.reframeText);
+  if (kw.empty) return null;
+  const g = run.reframeGrade;
   return h(
     'div',
     { class: 'card feedback' },
     h('h3', null, 'Your sentence'),
     h('blockquote', { class: 'yours' }, run.reframeText),
-    grade.hits.length
-      ? h('ul', { class: 'hits' }, grade.hits.map((x) => h('li', { class: x.good ? 'good' : 'flag' }, x.note)))
-      : h('p', { class: 'muted' }, 'No strong signals either way. Compare it with the best option above.'),
-    h('p', { class: 'muted small' }, 'Quick keyword check, not scored. Smarter grading of free text is coming.'),
+    g &&
+      g.method !== 'none' &&
+      h(
+        'div',
+        { class: 'written' },
+        h('div', { class: 'score-row' }, h('span', null, 'Written score'), h('strong', null, g.score), h('span', { class: 'muted small' }, '/ 100')),
+        h('div', { class: 'bar' }, h('span', { style: `width:${g.score}%`, class: g.score >= 70 ? 'good' : g.score >= 40 ? 'mid' : 'low' })),
+        g.method === 'embedding' && [
+          h('p', { class: 'small' }, `Closest reference framing (similarity ${g.closest.sim.toFixed(2)}):`),
+          h('blockquote', { class: 'yours small' }, g.closest.text),
+          g.flaw &&
+            h(
+              'p',
+              { class: 'warn-text' },
+              `Reads closer to a flawed framing — ${FLAW_LABELS[g.flaw.tag] ?? g.flaw.tag}: “${g.flaw.text}” (similarity ${g.flaw.sim.toFixed(2)})`,
+            ),
+        ],
+      ),
+    kw.hits.length
+      ? h('ul', { class: 'hits' }, kw.hits.map((x) => h('li', { class: x.good ? 'good' : 'flag' }, x.note)))
+      : h('p', { class: 'muted' }, 'No strong keyword signals either way. Compare it with the best option above.'),
+    g && WRITTEN_METHOD_NOTES[g.method] && h('p', { class: 'muted small' }, WRITTEN_METHOD_NOTES[g.method]),
   );
 }
 
@@ -750,7 +829,12 @@ function shareUrl(result) {
 function categoryNote(key, cat, result) {
   switch (key) {
     case 'reframe':
-      return cat.choice?.is_best ? 'You picked the strongest framing.' : `Your pick: ${(cat.choice?.flaw_tags || []).map((t) => FLAW_LABELS[t].toLowerCase()).join(', ')}.`;
+    {
+      const pick = cat.choice?.is_best ? 'Picked the strongest framing' : `Pick: ${(cat.choice?.flaw_tags || []).map((t) => FLAW_LABELS[t].toLowerCase()).join(', ')}`;
+      const method = { embedding: 'embedding-graded', keyword: 'keyword-graded' }[cat.grade?.method];
+      const written = method ? `written sentence ${cat.written}/100 (${method})` : 'no sentence written';
+      return `${pick}; ${written}.`;
+    }
     case 'coverage': {
       const locked = cat.items.filter((i) => i.status === 'locked').length;
       const base = `${fmt(cat.got)} of ${fmt(cat.total)} points of the drop explained by cards you filed correctly.`;
@@ -868,7 +952,7 @@ function renderDebrief() {
         result.categories.reframe.choice?.text ?? 'No option picked.',
       ),
       !result.categories.reframe.choice?.is_best && h('p', { class: 'muted' }, 'Best: ', result.categories.reframe.best.text),
-      reframeFeedback(gradeReframe(run.reframeText)),
+      reframeFeedback(),
     ),
 
     actions(secondary('Play again', playAgain), secondary('Home', () => go('home'))),
@@ -1085,6 +1169,7 @@ function renderShared() {
 // ---------- render loop ----------
 
 function render() {
+  if (!forceKeyword && view === 'game' && run?.round === 'reframe' && run.reframeStage !== 'feedback') embedder.load();
   let screen;
   if (view === 'shared' && shared) screen = renderShared();
   else if (view === 'game' && run) {

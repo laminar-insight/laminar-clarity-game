@@ -1314,3 +1314,47 @@ button.chip {
 .shared .actions {
   width: calc(100% + 32px);
 }
+
+/* embedding grader */
+.grader-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 4px 0 12px;
+}
+.grader-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.grader-status.loading::before {
+  background: var(--mid);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.grader-status.ready::before {
+  background: var(--good);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grader-status.loading::before {
+    animation: none;
+  }
+}
+.written {
+  margin-bottom: 12px;
+}
+.written .score-row span:first-child {
+  flex: 1;
+  font-weight: 600;
+}
+blockquote.small {
+  font-size: 0.88rem;
+}

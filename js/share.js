@@ -9,7 +9,9 @@ export const ROW_LABELS = ['Reframe', 'Ask', 'Build', 'Order'];
 
 /** Compact grid rows as letter codes (g/y/r/w/b), one string per row. */
 export function buildGrid(scenario, run, result) {
-  const reframe = result.categories.reframe.score === 100 ? 'g' : 'r';
+  const { pick, written, grade } = result.categories.reframe;
+  const writtenCode = !grade || grade.method === 'none' ? 'b' : written >= 70 ? 'g' : written >= 40 ? 'y' : 'r';
+  const reframe = (pick === 100 ? 'g' : 'r') + writtenCode;
   const ask = run.asked.map((id) => VALUE_CODE[scenario.questions.find((q) => q.id === id)?.value] ?? 'w').join('');
   const build = result.categories.coverage.items.map((i) => DRIVER_CODE[i.status]).join('');
   const expected = expectedBucketOrder(scenario, run.spine);

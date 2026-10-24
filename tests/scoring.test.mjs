@@ -15,6 +15,7 @@ function perfectRun(spine, asked) {
   for (const c of visibleComponents(scenario, asked)) assignments[c.id] = acceptedBuckets(c, spine)[0];
   return {
     reframeChoice: scenario.reframe_options.find((o) => o.is_best).id,
+    reframeGrade: { method: 'embedding', score: 100 },
     asked,
     spine,
     assignments,
@@ -115,6 +116,17 @@ test('reversed priority scores zero', () => {
   const run = perfectRun('metric_math', SENIOR);
   run.priority = [...run.priority].reverse();
   assert.equal(scoreRun(scenario, run).categories.priority.score, 0);
+});
+
+test('reframe blends the pick (60%) and the saved written grade (40%)', () => {
+  const run = perfectRun('metric_math', SENIOR);
+  run.reframeGrade = { method: 'keyword', score: 50 };
+  assert.equal(scoreRun(scenario, run).categories.reframe.score, 80);
+  delete run.reframeGrade; // skipped writing
+  assert.equal(scoreRun(scenario, run).categories.reframe.score, 60);
+  run.reframeChoice = scenario.reframe_options.find((o) => !o.is_best).id;
+  run.reframeGrade = { method: 'embedding', score: 100 };
+  assert.equal(scoreRun(scenario, run).categories.reframe.score, 40);
 });
 
 test('scoring is deterministic', () => {
