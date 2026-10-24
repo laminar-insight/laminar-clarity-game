@@ -78,7 +78,7 @@ Round 1 grades the player's one-sentence problem statement with a small sentence
 - **Fallback:** if the model fails to load, or isn't ready within 4 seconds of confirming, the sentence is scored with the keyword check: start at 40, +20 for each good signal, −25 for each flaw. Add `?grader=keyword` to the URL to force the fallback.
 - **Determinism:** the written grade and the method used are saved with the run when the player confirms Round 1. Scoring reads the saved grade, so a debrief or a shared result never changes because a model did or didn't load later.
 
-**The default thresholds are not calibrated against real model output yet.** To tune them, run this somewhere that can reach huggingface.co:
+**The default thresholds are not calibrated against real model output yet.** To collect data in the browser, add `?debug=1` to the URL. After grading, Round 1 lists the similarity to every reference and flaw, with a button that copies them. Or run this somewhere that can reach huggingface.co:
 
 ```sh
 npm i --no-save @huggingface/transformers@3.8.1

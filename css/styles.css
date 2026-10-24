@@ -1358,3 +1358,27 @@ button.chip {
 blockquote.small {
   font-size: 0.88rem;
 }
+
+.debug {
+  margin-top: 12px;
+  font-size: 0.8rem;
+}
+.debug summary {
+  cursor: pointer;
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+.debug table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.debug td {
+  padding: 4px 6px 4px 0;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+.debug td:first-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}

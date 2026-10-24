@@ -12,7 +12,7 @@ import {
   visibleComponents,
 } from './scoring.js';
 import { SOFT_CHAR_LIMIT, gradeReframe, keywordGrade } from './reframe.js';
-import { buildCorpus, corpusTexts, gradeSemantic } from './semantic.js';
+import { buildCorpus, corpusTexts, cosine, gradeSemantic } from './semantic.js';
 import * as embedder from './embedder.js';
 import {
   clearRun,
@@ -69,6 +69,9 @@ let shared = null;
 let ui = {};
 // ?grader=keyword skips the embedding model (for testing or slow devices).
 const forceKeyword = new URLSearchParams(location.search).get('grader') === 'keyword';
+// ?debug=1 shows every raw similarity after grading, for calibrating thresholds.
+const debugGrading = new URLSearchParams(location.search).get('debug') === '1';
+let lastSimilarities = null;
 
 // ---------- tiny DOM helper ----------
 
@@ -468,6 +471,12 @@ async function gradeWritten(text) {
     try {
       const corpus = buildCorpus(scenario);
       const vectors = await embedder.embed([text, ...corpusTexts(corpus)]);
+      if (debugGrading) {
+        const labels = [...corpus.references.map((t) => ['reference', t]), ...corpus.flaws.map((f) => [f.tag, f.text])];
+        lastSimilarities = labels
+          .map(([kind, t], i) => ({ kind, text: t, sim: cosine(vectors[0], vectors[i + 1]) }))
+          .sort((a, b) => b.sim - a.sim);
+      }
       return gradeSemantic(vectors, corpus, scenario.grading);
     } catch (e) {
       console.warn('Embedding grading unavailable, falling back to keywords:', e.message);
@@ -534,6 +543,33 @@ function reframeFeedback() {
       ? h('ul', { class: 'hits' }, kw.hits.map((x) => h('li', { class: x.good ? 'good' : 'flag' }, x.note)))
       : h('p', { class: 'muted' }, 'No strong keyword signals either way. Compare it with the best option above.'),
     g && WRITTEN_METHOD_NOTES[g.method] && h('p', { class: 'muted small' }, WRITTEN_METHOD_NOTES[g.method]),
+    debugGrading && similarityTable(),
+  );
+}
+
+function similarityTable() {
+  if (!lastSimilarities) return h('p', { class: 'muted small' }, 'Debug: no embedding similarities for this sentence (keyword grading was used, or the page was reloaded).');
+  const copy = async (e) => {
+    const text = [`"${run.reframeText}"`, ...lastSimilarities.map((r) => `${r.sim.toFixed(3)}\t${r.kind}\t${r.text}`)].join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      e.currentTarget.textContent = 'Copied!';
+    } catch {
+      prompt('Copy:', text);
+    }
+  };
+  return h(
+    'details',
+    { class: 'debug', open: true },
+    h('summary', null, 'Debug: similarity to every reference and flaw'),
+    h(
+      'table',
+      null,
+      lastSimilarities.map((r) =>
+        h('tr', null, h('td', null, r.sim.toFixed(3)), h('td', null, h('span', { class: `tag ${r.kind === 'reference' ? 'good' : 'flaw'}` }, r.kind)), h('td', null, r.text)),
+      ),
+    ),
+    h('button', { class: 'btn ghost', onclick: copy }, 'Copy for calibration'),
   );
 }
 
