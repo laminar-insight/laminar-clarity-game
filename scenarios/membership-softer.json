@@ -1,0 +1,376 @@
+{
+  "id": "membership-softer",
+  "archetype": "metric_moved",
+  "domain": "Retail · Membership",
+  "title": "The member base feels softer",
+  "company": "Northfield Warehouse Club",
+  "question_budget": 5,
+
+  "ask": {
+    "channel": "#membership-leads",
+    "sender": { "name": "Dana Whitfield", "role": "VP, Membership" },
+    "sent": "Tue 9:14 AM",
+    "messages": [
+      "hey — quick one (famous last words 😅)",
+      "leadership keeps saying the member base \"feels softer\" lately. the renewals deck last month looked off to me too, and with BulkBarn opening near us + NPS dipping, people are getting nervous.",
+      "Gary thinks members are sick of the assortment, Priya says it's just the economy. finance asked if it's the fee. and someone brought up the app crash in august again 🙃",
+      "can you figure out what's actually going on? need something I can say at Thursday's staff meeting. don't boil the ocean pls"
+    ],
+    "constraints": [
+      "Due: Thursday staff meeting (2 days)",
+      "No eng support this sprint",
+      "You have warehouse access to member + renewal tables"
+    ]
+  },
+
+  "reframe_options": [
+    {
+      "id": "a",
+      "text": "Determine whether and why the renewal rate declined this quarter, and which drivers are actionable before Thursday.",
+      "is_best": true,
+      "flaw_tags": [],
+      "explanation": "Names a measurable metric, leaves room for the decline to be partly a measurement artifact (\"whether\"), asks for drivers rather than presuming one, and ties the work to Thursday's decision window."
+    },
+    {
+      "id": "b",
+      "text": "Find out why members are unhappy.",
+      "is_best": false,
+      "flaw_tags": ["assumes_cause"],
+      "explanation": "Assumes dissatisfaction is the cause. Nothing yet says members are unhappy — the drop could be mix, measurement, or a product change."
+    },
+    {
+      "id": "c",
+      "text": "Build a churn prediction model.",
+      "is_best": false,
+      "flaw_tags": ["jumps_to_solution"],
+      "explanation": "Jumps to a deliverable before anyone knows what moved or what decision it serves. Also not doable by Thursday with no eng support."
+    },
+    {
+      "id": "d",
+      "text": "Explain why the member base feels softer.",
+      "is_best": false,
+      "flaw_tags": ["unmeasurable"],
+      "explanation": "Restates the stakeholder's vague language. \"Feels softer\" has no metric, so you can't tell when you've answered it."
+    },
+    {
+      "id": "e",
+      "text": "Determine whether the competitor opening caused the drop.",
+      "is_best": false,
+      "flaw_tags": ["too_narrow"],
+      "explanation": "Tests a single loud hypothesis. Even if BulkBarn matters a little, this framing can't find the drivers that matter most."
+    }
+  ],
+
+  "reference_frames": [
+    "Determine whether the renewal rate actually declined this quarter, by how much, and which drivers are real and actionable before Thursday's staff meeting.",
+    "Quantify the drop in renewal rate and decompose it into measurement, mix, and true rate change so leadership can decide what to do.",
+    "Figure out what is driving the decline in member renewals and which of those drivers leadership can act on."
+  ],
+
+  "flaw_patterns": {
+    "assumes_cause": [
+      "Find out why members are unhappy with us.",
+      "Figure out why members are leaving because of the assortment."
+    ],
+    "jumps_to_solution": [
+      "Build a churn prediction model.",
+      "Create a dashboard to track member sentiment."
+    ],
+    "unmeasurable": [
+      "Explain why the member base feels softer.",
+      "Understand the general vibe of our membership."
+    ],
+    "too_narrow": [
+      "Determine whether the competitor opening caused the drop.",
+      "Check whether the app outage hurt renewals."
+    ]
+  },
+
+  "questions": [
+    {
+      "id": "q_metric",
+      "text": "When leadership says \"softer\", what metric do they mean?",
+      "reveal": "Pulled it: renewal rate is 74% this quarter vs 78% last quarter. Total member count is basically flat.",
+      "value": "high",
+      "unlocks": ["total_members_flat"]
+    },
+    {
+      "id": "q_definition",
+      "text": "Has the renewal-rate definition or calculation changed recently?",
+      "reveal": "Ops extended the renewal grace window from 30 to 60 days in May. So members who expired in the last couple of months can still renew and aren't counted yet.",
+      "value": "high",
+      "unlocks": ["grace_window"]
+    },
+    {
+      "id": "q_cohort",
+      "text": "Can we split renewal rate by acquisition cohort?",
+      "reveal": "Last fall's $20 promo cohort is hitting first renewal now. They renew at ~55% vs ~80% for full-price members — and they're 13% of this quarter's renewal base vs the usual ~5%.",
+      "value": "high",
+      "unlocks": ["promo_cohort_renewal", "promo_share_jump", "full_price_stable"]
+    },
+    {
+      "id": "q_decision",
+      "text": "What decision will leadership make with this answer?",
+      "reveal": "honestly not sure. I think the real question underneath is whether we rerun the $20 promo this fall. planning locks in two weeks.",
+      "value": "high",
+      "unlocks": []
+    },
+    {
+      "id": "q_product",
+      "text": "Any product, app, or checkout changes in the last six months?",
+      "reveal": "Oh — in July the app signup flow switched auto-renew from default-on to opt-in (legal asked). In-store signup didn't change.",
+      "value": "med",
+      "unlocks": ["auto_renew_optin"]
+    },
+    {
+      "id": "q_last_year",
+      "text": "What did renewals do in the same period last year?",
+      "reveal": "Q3 always dips a little vs Q2 — about half a point, every year since 2021.",
+      "value": "med",
+      "unlocks": ["seasonality"]
+    },
+    {
+      "id": "q_fee",
+      "text": "Did the membership fee change?",
+      "reveal": "Nope — it's been $60 for two years. Next pricing review is January.",
+      "value": "med",
+      "unlocks": []
+    },
+    {
+      "id": "q_data",
+      "text": "Can we get member-level data by Thursday?",
+      "reveal": "Yes, it's all in the warehouse. Caveat: cohort tags only go back 12 months. My analyst took a quick look — promo members shop about half as often as full-price members in their first year.",
+      "value": "med",
+      "unlocks": ["promo_low_frequency"]
+    },
+    {
+      "id": "q_markets",
+      "text": "Is it all markets, or concentrated in a few?",
+      "reveal": "Pretty broad-based. The two markets where BulkBarn opened are slightly worse, maybe half a point.",
+      "value": "low",
+      "unlocks": ["markets_broad"]
+    },
+    {
+      "id": "q_competitor",
+      "text": "What exactly did BulkBarn do?",
+      "reveal": "Opened two warehouses in August, Riverton and Eastgate. They're running a $1 first-year trial.",
+      "value": "low",
+      "unlocks": []
+    },
+    {
+      "id": "q_nps",
+      "text": "What does NPS say?",
+      "reveal": "Down 4 points this quarter… though CX switched survey vendors in July, so it might not be apples to apples.",
+      "value": "noise",
+      "unlocks": []
+    },
+    {
+      "id": "q_outage",
+      "text": "Did the app have any outages?",
+      "reveal": "Yeah, a 2-day crash in mid-August. Renewals still went through in-store and on web, and auto-renew charges run server-side anyway.",
+      "value": "noise",
+      "unlocks": []
+    }
+  ],
+
+  "spines": [
+    {
+      "id": "metric_math",
+      "name": "Metric math",
+      "blurb": "Is the drop real, is it mix, or did rates change within segments?",
+      "buckets": [
+        { "id": "measurement", "name": "Measurement artifact" },
+        { "id": "mix", "name": "Mix shift" },
+        { "id": "rate", "name": "Within-segment rate change" }
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "name": "Member lifecycle",
+      "blurb": "Where in the member journey is the loss happening?",
+      "buckets": [
+        { "id": "acquisition", "name": "Acquisition" },
+        { "id": "onboarding", "name": "Onboarding & auto-renew" },
+        { "id": "engagement", "name": "Engagement" },
+        { "id": "renewal", "name": "Renewal moment" }
+      ]
+    },
+    {
+      "id": "int_ext",
+      "name": "Internal vs external",
+      "blurb": "Did we cause it, did the world, or is it how we count?",
+      "buckets": [
+        { "id": "measurement", "name": "Measurement" },
+        { "id": "internal", "name": "Internal changes" },
+        { "id": "external", "name": "External factors" }
+      ]
+    }
+  ],
+
+  "components": [
+    {
+      "id": "promo_cohort_renewal",
+      "text": "Last fall's $20 promo cohort is hitting first renewal and renewing at ~55% (vs ~80% full price).",
+      "type": "driver",
+      "weight": 1.5,
+      "unlocked_by": "q_cohort",
+      "buckets": { "metric_math": "mix", "lifecycle": "acquisition", "int_ext": "internal" }
+    },
+    {
+      "id": "promo_low_frequency",
+      "text": "Promo members shop about half as often as full-price members in their first year.",
+      "type": "driver",
+      "weight": 0.5,
+      "unlocked_by": "q_data",
+      "buckets": { "metric_math": "mix", "lifecycle": "engagement", "int_ext": "internal" }
+    },
+    {
+      "id": "grace_window",
+      "text": "The renewal grace window went from 30 to 60 days in May — recent months are still filling in.",
+      "type": "driver",
+      "weight": 1.0,
+      "unlocked_by": "q_definition",
+      "buckets": { "metric_math": "measurement", "lifecycle": "renewal", "int_ext": "measurement" }
+    },
+    {
+      "id": "auto_renew_optin",
+      "text": "In July, app signups switched auto-renew from default-on to opt-in.",
+      "type": "driver",
+      "weight": 0.5,
+      "unlocked_by": "q_product",
+      "buckets": { "metric_math": "rate", "lifecycle": "onboarding", "int_ext": "internal" }
+    },
+    {
+      "id": "seasonality",
+      "text": "Q3 renewal rate dips about half a point vs Q2 every year.",
+      "type": "driver",
+      "weight": 0.5,
+      "unlocked_by": "q_last_year",
+      "buckets": { "metric_math": "rate", "lifecycle": "renewal", "int_ext": "external" }
+    },
+    {
+      "id": "promo_share_jump",
+      "text": "Promo members are 13% of this quarter's renewal base, vs the usual ~5%.",
+      "type": "evidence",
+      "unlocked_by": "q_cohort",
+      "buckets": { "metric_math": "mix", "lifecycle": "acquisition", "int_ext": "internal" }
+    },
+    {
+      "id": "full_price_stable",
+      "text": "Full-price members are still renewing at ~80%, in line with last year.",
+      "type": "evidence",
+      "unlocked_by": "q_cohort",
+      "buckets": { "metric_math": "rate", "lifecycle": "renewal", "int_ext": ["external", "internal"] }
+    },
+    {
+      "id": "total_members_flat",
+      "text": "Total member count is flat; what moved is renewal rate, 78% → 74%.",
+      "type": "evidence",
+      "unlocked_by": "q_metric",
+      "buckets": { "metric_math": "measurement", "lifecycle": ["renewal", "acquisition"], "int_ext": "measurement" }
+    },
+    {
+      "id": "markets_broad",
+      "text": "The decline is broad-based across markets; two markets are slightly worse.",
+      "type": "evidence",
+      "unlocked_by": "q_markets",
+      "buckets": { "metric_math": "rate", "lifecycle": "renewal", "int_ext": "external" }
+    },
+    {
+      "id": "fee_increase",
+      "text": "A membership fee change pushed members away.",
+      "type": "ruled_out",
+      "debunked_by": ["q_fee"],
+      "buckets": { "metric_math": ["ruled_out", "noise"], "lifecycle": ["ruled_out", "noise"], "int_ext": ["ruled_out", "noise"] }
+    },
+    {
+      "id": "competitor_openings",
+      "text": "BulkBarn opened warehouses in two of our markets in August.",
+      "type": "red_herring",
+      "debunked_by": ["q_markets"],
+      "buckets": { "metric_math": ["noise", "ruled_out"], "lifecycle": ["noise", "ruled_out"], "int_ext": ["noise", "ruled_out"] }
+    },
+    {
+      "id": "nps_drop",
+      "text": "NPS is down 4 points this quarter.",
+      "type": "red_herring",
+      "debunked_by": ["q_nps"],
+      "buckets": { "metric_math": ["noise", "ruled_out"], "lifecycle": ["noise", "ruled_out"], "int_ext": ["noise", "ruled_out"] }
+    },
+    {
+      "id": "app_outage",
+      "text": "The app crashed for two days in August.",
+      "type": "red_herring",
+      "debunked_by": ["q_outage"],
+      "buckets": { "metric_math": ["noise", "ruled_out"], "lifecycle": ["noise", "ruled_out"], "int_ext": ["noise", "ruled_out"] }
+    },
+    {
+      "id": "assortment_unhappy",
+      "text": "Members are tired of the product assortment.",
+      "type": "assumption",
+      "buckets": { "metric_math": "noise", "lifecycle": "noise", "int_ext": "noise" }
+    },
+    {
+      "id": "economic_pressure",
+      "text": "Household budgets are tight — it's the economy.",
+      "type": "assumption",
+      "buckets": { "metric_math": "noise", "lifecycle": "noise", "int_ext": "noise" }
+    }
+  ],
+
+  "global_checks": [
+    {
+      "id": "metric_validated",
+      "label": "Validated the metric definition",
+      "satisfied_by": ["q_metric", "q_definition"],
+      "why": "\"Softer\" isn't a metric. Pin down what moved — and whether the way it's counted changed — before explaining it."
+    },
+    {
+      "id": "seasonality_checked",
+      "label": "Checked seasonality",
+      "satisfied_by": ["q_last_year"],
+      "why": "A quarter-over-quarter drop means little until you know what the same quarter normally does."
+    },
+    {
+      "id": "decision_clarified",
+      "label": "Clarified the decision",
+      "satisfied_by": ["q_decision"],
+      "why": "Learning that the answer feeds a promo-rerun decision changes what \"done by Thursday\" looks like."
+    }
+  ],
+
+  "priority_key": [
+    { "id": "grace_window", "rationale": "Rule out the measurement artifact first: if recent months are still maturing, about a point of the drop isn't real yet." },
+    { "id": "promo_cohort_renewal", "rationale": "Then the biggest real driver: the promo cohort's share of renewals nearly tripled at a much lower renewal rate." },
+    { "id": "auto_renew_optin", "rationale": "Next, the internal change inside the window — cheap to size and directly actionable." },
+    { "id": "seasonality", "rationale": "Net out the normal Q3 dip so you don't over-explain the remainder." },
+    { "id": "promo_low_frequency", "rationale": "Finally, the mechanism behind the promo cohort's low renewal — useful for the promo decision, not for Thursday's headline." }
+  ],
+
+  "debrief": {
+    "headline": "Renewal rate fell 78% → 74%. Most of it is who's renewing and how we count, not members souring.",
+    "narrative": [
+      "About 2 points is mix shift. Last fall's $20 promo cohort is hitting its first renewal. Those members renew at ~55% versus ~80% for full price, and they're 13% of this quarter's renewal base instead of the usual 5%. They also shop about half as often, which is why they don't renew.",
+      "About 1 point is measurement. Ops extended the grace window from 30 to 60 days in May, so the most recent months are still filling in. Part of the drop will disappear as late renewals land.",
+      "About half a point is the July switch to opt-in auto-renew in the app signup flow.",
+      "About half a point is normal Q3 seasonality.",
+      "Full-price renewal is steady, the fee hasn't changed, and the decline is broad-based. So it isn't BulkBarn, the August outage, or a general mood problem. NPS isn't comparable across the survey-vendor change."
+    ],
+    "breakdown": [
+      { "label": "Promo cohort mix shift", "pts": 2.0, "components": ["promo_cohort_renewal", "promo_low_frequency"] },
+      { "label": "Grace-window measurement lag", "pts": 1.0, "components": ["grace_window"] },
+      { "label": "Auto-renew → opt-in", "pts": 0.5, "components": ["auto_renew_optin"] },
+      { "label": "Normal Q3 seasonality", "pts": 0.5, "components": ["seasonality"] }
+    ],
+    "senior_analyst": [
+      "Turn \"softer\" into a number: renewal rate, 78% → 74%. Then ask whether the definition changed before explaining anything.",
+      "Size the grace-window lag by re-cutting recent months on the old 30-day window. About a point isn't a real decline yet.",
+      "Split the change into mix and rate. The promo cohort going from 5% to 13% of renewals at ~55% accounts for ~2 points while full-price stays flat.",
+      "List internal changes inside the window. The July auto-renew opt-in is small, cheap to confirm, and easy to act on.",
+      "Compare against last year's Q3 to remove the seasonal dip.",
+      "Connect it to the real decision, whether to rerun the promo. Propose comparing promo-cohort lifetime value with acquisition cost. Don't build a churn model.",
+      "Set the noise aside on purpose: NPS changed vendors, the outage didn't touch renewals, and the competitor effect is about half a point in two markets."
+    ],
+    "thursday_line": "Renewal rate is down 4 points, but about 1 point is a reporting lag and about 2 points is last fall's promo cohort renewing at lower rates. Full-price renewal is stable. Before we rerun the promo, let's compare that cohort's lifetime value to what it cost us."
+  }
+}

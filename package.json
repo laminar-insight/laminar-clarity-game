@@ -1,0 +1,15 @@
+{
+  "name": "laminar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Turn the turbulent into structure — a mobile-first problem-structuring game for data scientists and analysts.",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
